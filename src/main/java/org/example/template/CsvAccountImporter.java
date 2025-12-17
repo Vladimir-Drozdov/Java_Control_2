@@ -10,9 +10,15 @@ public class CsvAccountImporter extends DataImporter<BankAccount> {
     protected List<BankAccount> parse(String raw) {
         List<BankAccount> list = new ArrayList<>();
         String[] lines = raw.split("\n");
-        for (int i = 0; i < lines.length; i++) {
-            String[] p = lines[i].split(",");
-            list.add(new BankAccount(p[0], p[1], Double.parseDouble(p[2])));
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) continue; // пропускаем пустые строки
+            String[] parts = line.split(",");
+            if (parts.length < 3) continue; // пропускаем некорректные строки
+            String id = parts[0].trim();
+            String name = parts[1].trim();
+            double balance = Double.parseDouble(parts[2].trim());
+            list.add(new BankAccount(id, name, balance));
         }
         return list;
     }

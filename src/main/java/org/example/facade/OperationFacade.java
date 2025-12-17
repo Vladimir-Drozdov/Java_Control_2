@@ -17,7 +17,6 @@ public class OperationFacade {
         this.factory = factory;
     }
 
-    // Метод create теперь принимает поля и использует фабрику
     public Operation create(String id, Operation.Type type, String bankAccountId,
                             double amount, LocalDate date, String description, String categoryId) {
         Operation op = factory.createOperation(id, type, bankAccountId, amount, date, description, categoryId);

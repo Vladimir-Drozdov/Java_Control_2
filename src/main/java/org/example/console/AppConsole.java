@@ -5,40 +5,39 @@ import org.example.command.decorators.TimingDecorator;
 import org.example.facade.BankAccountFacade;
 import org.example.facade.CategoryFacade;
 import org.example.facade.OperationFacade;
-import org.example.factory.DomainFactory;
 import org.example.model.BankAccount;
 import org.example.model.Category;
 import org.example.model.Operation;
-import org.example.proxy.BankAccountRepositoryProxy;
-import org.example.repo.BankAccountRepositoryMemory;
-import org.example.repo.BankAccountRepository;
-import org.example.repo.CategoryRepository;
-import org.example.repo.OperationRepositoryMemory;
-import org.example.repo.OperationRepository;
 import org.example.template.CsvAccountImporter;
 import org.example.template.CsvCategoryImporter;
 import org.example.template.CsvOperationImporter;
-import org.example.visitor.CsvExporter;
 import org.example.visitor.ExporterVisitor;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
 
-
 public class AppConsole {
+
+    private final BankAccountFacade bankFacade;
+    private final CategoryFacade categoryFacade;
+    private final OperationFacade operationFacade;
+    private final ExporterVisitor csvExporter;
+
+    public AppConsole(
+            BankAccountFacade bankFacade,
+            CategoryFacade categoryFacade,
+            OperationFacade operationFacade,
+            ExporterVisitor csvExporter
+    ) {
+        this.bankFacade = bankFacade;
+        this.categoryFacade = categoryFacade;
+        this.operationFacade = operationFacade;
+        this.csvExporter = csvExporter;
+    }
 
     public void run() {
         Scanner sc = new Scanner(System.in);
-        DomainFactory factory = new DomainFactory();
-
-        BankAccountRepository realRepo = new BankAccountRepositoryMemory();
-        BankAccountRepository proxyRepo = new BankAccountRepositoryProxy(realRepo, "accounts.csv");
-        BankAccountFacade bankFacade = new BankAccountFacade(proxyRepo, factory);
-
-        CategoryFacade categoryFacade = new CategoryFacade(new CategoryRepository(), factory);
-        OperationFacade operationFacade = new OperationFacade(new OperationRepositoryMemory(), factory);
-        ExporterVisitor csvExporter = new CsvExporter();
 
         while (true) {
             System.out.println("\nВыберите действие:");
@@ -70,186 +69,138 @@ public class AppConsole {
                     String id = sc.next();
                     String name = sc.next();
                     double balance = sc.nextDouble();
-                    Command cmd = new CreateAccountCommand(bankFacade, id, name, balance);
-                    new TimingDecorator(cmd).execute();
+                    execute(new CreateAccountCommand(bankFacade, id, name, balance));
                 }
                 case 2 -> {
                     System.out.println("Введите id счёта:");
-                    String id = sc.next();
-                    Command cmd = new ShowAccountCommand(bankFacade, id);
-                    new TimingDecorator(cmd).execute();
+                    execute(new ShowAccountCommand(bankFacade, sc.next()));
                 }
                 case 3 -> {
-                    System.out.println("Введите id счёта, новое имя, новый баланс:");
-                    String id = sc.next();
-                    String newName = sc.next();
-                    double newBalance = sc.nextDouble();
-                    Command cmd = new EditAccountCommand(bankFacade, id, newName, newBalance);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id, новое имя, новый баланс:");
+                    execute(new EditAccountCommand(
+                            bankFacade, sc.next(), sc.next(), sc.nextDouble()
+                    ));
                 }
                 case 4 -> {
-                    System.out.println("Введите id счёта для удаления:");
-                    String id = sc.next();
-                    Command cmd = new DeleteAccountCommand(bankFacade, id);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id счёта:");
+                    execute(new DeleteAccountCommand(bankFacade, sc.next()));
                 }
                 case 5 -> {
-                    System.out.println("Введите id, type(income/expense), name категории:");
-                    String id = sc.next();
-                    String typeInput = sc.next();
-                    String name = sc.next();
-                    Command cmd = new CreateCategoryCommand(categoryFacade, id, typeInput, name);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id, type, name:");
+                    execute(new CreateCategoryCommand(
+                            categoryFacade, sc.next(), sc.next(), sc.next()
+                    ));
                 }
                 case 6 -> {
                     System.out.println("Введите id категории:");
-                    String id = sc.next();
-                    Command cmd = new ShowCategoryCommand(categoryFacade, id);
-                    new TimingDecorator(cmd).execute();
+                    execute(new ShowCategoryCommand(categoryFacade, sc.next()));
                 }
                 case 7 -> {
-                    System.out.println("Введите id категории, новый type, новое name:");
-                    String id = sc.next();
-                    String newType = sc.next();
-                    String newName = sc.next();
-                    Command cmd = new EditCategoryCommand(categoryFacade, id, newType, newName);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id, новый type, новое name:");
+                    execute(new EditCategoryCommand(
+                            categoryFacade, sc.next(), sc.next(), sc.next()
+                    ));
                 }
                 case 8 -> {
-                    System.out.println("Введите id категории для удаления:");
-                    String id = sc.next();
-                    Command cmd = new DeleteCategoryCommand(categoryFacade, id);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id категории:");
+                    execute(new DeleteCategoryCommand(categoryFacade, sc.next()));
                 }
                 case 9 -> {
-                    System.out.println("Введите id, type(income/expense), bankAccountId, amount, categoryId:");
-                    String id = sc.next();
-                    String type = sc.next();
-                    String bankId = sc.next();
-                    double amount = sc.nextDouble();
-                    String categoryId = sc.next();
-                    LocalDate date = LocalDate.now();
-                    Command cmd = new CreateOperationCommand(operationFacade, id, type, bankId, amount, date, "", categoryId);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id, type, bankId, amount, categoryId:");
+                    execute(new CreateOperationCommand(
+                            operationFacade,
+                            sc.next(),
+                            sc.next(),
+                            sc.next(),
+                            sc.nextDouble(),
+                            LocalDate.now(),
+                            "",
+                            sc.next()
+                    ));
                 }
                 case 10 -> {
                     System.out.println("Введите id операции:");
-                    String id = sc.next();
-                    Command cmd = new ShowOperationCommand(operationFacade, id);
-                    new TimingDecorator(cmd).execute();
+                    execute(new ShowOperationCommand(operationFacade, sc.next()));
                 }
                 case 11 -> {
-                    System.out.println("Введите id операции, новый type, новый bankAccountId, новый amount, новый categoryId:");
-                    String id = sc.next();
-                    String type = sc.next();
-                    String bankId = sc.next();
-                    double amount = sc.nextDouble();
-                    String categoryId = sc.next();
-                    LocalDate date = LocalDate.now();
-                    Command cmd = new EditOperationCommand(operationFacade, id, type, bankId, amount, date, "", categoryId);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id, type, bankId, amount, categoryId:");
+                    execute(new EditOperationCommand(
+                            operationFacade,
+                            sc.next(),
+                            sc.next(),
+                            sc.next(),
+                            sc.nextDouble(),
+                            LocalDate.now(),
+                            "",
+                            sc.next()
+                    ));
                 }
                 case 12 -> {
-                    System.out.println("Введите id операции для удаления:");
-                    String id = sc.next();
-                    Command cmd = new DeleteOperationCommand(operationFacade, id);
-                    new TimingDecorator(cmd).execute();
+                    System.out.println("Введите id операции:");
+                    execute(new DeleteOperationCommand(operationFacade, sc.next()));
                 }
                 case 13 -> {
-                    System.out.println("Экспорт счетов в CSV:");
                     List<BankAccount> accounts = bankFacade.getAll();
-                    for (BankAccount acc : accounts) {
-                        acc.accept(csvExporter);
-                    }
+                    accounts.forEach(acc -> acc.accept(csvExporter));
                 }
-
                 case 14 -> {
-                    System.out.println("Экспорт категорий и операций в CSV:");
-
-                    List<Category> categories = categoryFacade.getAll();
-                    for (Category cat : categories) {
-                        cat.accept(csvExporter);
-                    }
-
-                    List<Operation> operations = operationFacade.getAll();
-                    for (Operation op : operations) {
-                        op.accept(csvExporter);
-                    }
+                    categoryFacade.getAll().forEach(c -> c.accept(csvExporter));
+                    operationFacade.getAll().forEach(o -> o.accept(csvExporter));
                 }
-                case 15 -> {
-                    System.out.println("Введите путь к CSV-файлу со счетами:");
-                    String path = sc.nextLine();
-
-                    CsvAccountImporter importer = new CsvAccountImporter();
-                    try {
-                        for (var acc : importer.importData(path)) {
-                            bankFacade.create(
-                                    acc.getId(),
-                                    acc.getName(),
-                                    acc.getBalance()
-                            );
-                        }
-                        System.out.println("Счета импортированы.");
-                    } catch (Exception e) {
-                        System.out.println("Ошибка при импорте счетов: " + e.getMessage());
-                    }
-                }
-
-                case 16 -> {
-                    System.out.println("Введите путь к CSV-файлу с категориями:");
-                    String path = sc.nextLine();
-
-                    CsvCategoryImporter importer = new CsvCategoryImporter();
-                    try {
-                        for (var cat : importer.importData(path)) {
-                            categoryFacade.create(
-                                    cat.getId(),
-                                    cat.getType(),
-                                    cat.getName()
-                            );
-                        }
-                        System.out.println("Категории импортированы.");
-                    } catch (Exception e) {
-                        System.out.println("Ошибка при импорте категорий: " + e.getMessage());
-                    }
-                }
-
-                case 17 -> {
-                    System.out.println("Введите путь к CSV-файлу с операциями:");
-                    String path = sc.nextLine();
-
-                    CsvOperationImporter importer = new CsvOperationImporter();
-                    try {
-                        for (var rawOp : importer.importData(path)) {
-                            Operation.Type opType;
-                            try {
-                                opType = Operation.Type.valueOf(rawOp.getType().toString().toUpperCase());
-                            } catch (IllegalArgumentException e) {
-                                System.out.println("Неверный тип операции для id " + rawOp.getId() + ". Пропущена.");
-                                continue;
-                            }
-
-                            operationFacade.create(
-                                    rawOp.getId(),
-                                    opType,
-                                    rawOp.getBankAccountId(),
-                                    rawOp.getAmount(),
-                                    rawOp.getDate(),
-                                    rawOp.getDescription(),
-                                    rawOp.getCategoryId()
-                            );
-                        }
-                        System.out.println("Операции импортированы.");
-                    } catch (Exception e) {
-                        System.out.println("Ошибка при импорте операций: " + e.getMessage());
-                    }
-                }
+                case 15 -> importAccounts(sc);
+                case 16 -> importCategories(sc);
+                case 17 -> importOperations(sc);
                 case 0 -> {
-                    System.out.println("Выход из приложения.");
+                    System.out.println("Выход.");
                     return;
                 }
-                default -> System.out.println("Неверный выбор. Попробуйте снова.");
+                default -> System.out.println("Неверный ввод.");
             }
+        }
+    }
+
+    private void execute(Command cmd) {
+        new TimingDecorator(cmd).execute();
+    }
+
+    private void importAccounts(Scanner sc) {
+        System.out.println("Путь к CSV:");
+        try {
+            for (var acc : new CsvAccountImporter().importData(sc.nextLine())) {
+                bankFacade.create(acc.getId(), acc.getName(), acc.getBalance());
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка импорта счетов: " + e.getMessage());
+        }
+    }
+
+    private void importCategories(Scanner sc) {
+        System.out.println("Путь к CSV:");
+        try {
+            for (var cat : new CsvCategoryImporter().importData(sc.nextLine())) {
+                categoryFacade.create(cat.getId(), cat.getType(), cat.getName());
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка импорта категорий: " + e.getMessage());
+        }
+    }
+
+    private void importOperations(Scanner sc) {
+        System.out.println("Путь к CSV:");
+        try {
+            for (var op : new CsvOperationImporter().importData(sc.nextLine())) {
+                operationFacade.create(
+                        op.getId(),
+                        op.getType(),
+                        op.getBankAccountId(),
+                        op.getAmount(),
+                        op.getDate(),
+                        op.getDescription(),
+                        op.getCategoryId()
+                );
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка импорта операций: " + e.getMessage());
         }
     }
 }

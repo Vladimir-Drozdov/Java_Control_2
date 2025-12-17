@@ -16,7 +16,6 @@ public class BankAccountRepositoryProxy implements BankAccountRepository {
         this.realRepo = repo;
         this.filePath = filePath;
 
-        // Загружаем данные из файла в репозиторий и кеш
         try {
             List<BankAccount> accounts = loadFromFile(filePath);
             for (BankAccount acc : accounts) {
