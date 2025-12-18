@@ -1,4 +1,3 @@
-// src/main/java/org/example/repository/BankAccountRepositoryMemory.java
 package org.example.repo;
 
 import org.example.model.BankAccount;

@@ -29,7 +29,6 @@ public class Operation {
         this.categoryId = categoryId;
     }
 
-    // Геттеры
     public String getId() { return id; }
     public Type getType() { return type; }
     public String getBankAccountId() { return bankAccountId; }
@@ -38,7 +37,6 @@ public class Operation {
     public String getDescription() { return description; }
     public String getCategoryId() { return categoryId; }
 
-    // Сеттеры
     public void setType(Type type) { this.type = type; }
     public void setBankAccountId(String bankAccountId) { this.bankAccountId = bankAccountId; }
     public void setAmount(double amount) { this.amount = amount; }
